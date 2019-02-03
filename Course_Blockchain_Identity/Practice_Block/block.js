@@ -28,7 +28,7 @@ class Block {
         let self = this;
         const promise = new Promise((resolve, reject) => {
             const result = {
-                hash: SHA256(JSON.stringify(this.body))
+                hash: SHA256(JSON.stringify(this))
             };
             resolve(result);
         });
