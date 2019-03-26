@@ -9,24 +9,24 @@ let myBlockChain = new BlockChain.Blockchain();
 
 setTimeout(function () {
 	console.log("Waiting...")
-}, 10000);
+}, 3000);
 
 /******************************************
  ** Function for Create Tests Blocks   ****
  ******************************************/
 
 
-(function theLoop (i) {
+(function theLoop(i) {
 	setTimeout(function () {
 		let blockTest = new Block.Block("Test Block - " + (i + 1));
 		// Be careful this only will work if your method 'addBlock' in the Blockchain.js file return a Promise
 		myBlockChain.addBlock(blockTest).then((result) => {
 			console.log(result);
 			i++;
-			if (i < 10) theLoop(i);
+			if (i < 1) theLoop(i);
 		});
 	}, 10000);
-  })(0);
+})(0);
 
 
 /***********************************************

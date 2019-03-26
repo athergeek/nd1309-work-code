@@ -12,30 +12,128 @@ class LevelSandbox {
     }
 
     // Get data from levelDB with key (Promise)
-    getLevelDBData(key){
+    getLevelDBData(key) {
         let self = this;
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             // Add your code here, remember in Promises you need to resolve() or reject()
+            self.db.get(key, function (err, value) {
+                if (err) {
+                    console.log('Not found!', err);
+                    reject(`${key} Not Found !!!`);
+                }
+                resolve(value);
+            });
         });
     }
 
     // Add data to levelDB with key and value (Promise)
     addLevelDBData(key, value) {
         let self = this;
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             // Add your code here, remember in Promises you need to resolve() or reject() 
+            self.db.put(key, value, function (success, err) {
+                if (err) {
+                    console.log('Put Failed!', err);
+                    reject(`(${key},${value}) put failed!!!`);
+                }
+                console.log(`Block Written ....  ${JSON.stringify(key)},${JSON.stringify(value)} `);
+                resolve(`${JSON.stringify(key)}, ${JSON.stringify(value)} put successfull...`);
+            });
         });
     }
 
     // Method that return the height
     getBlocksCount() {
         let self = this;
-        return new Promise(function(resolve, reject){
+        const dataArray = [];
+        return new Promise(function (resolve, reject) {
             // Add your code here, remember in Promises you need to resolve() or reject()
+            self.db.createReadStream()
+                .on('data', function (data) {
+                    dataArray.push(data);
+                })
+                .on('error', function (err) {
+                    reject(err)
+                })
+                .on('close', function () {
+                    resolve(dataArray.length);
+                });
         });
     }
-        
 
+    addDataToLevelDB(data) {
+        let self = this;
+        let i = 0;
+        return new Promise(function (resolve, reject) {
+            // Add your code here, remember in Promises you need to resolve() or reject()
+            self.db.createReadStream()
+                .on('data', function (data) {
+                    i++;
+                })
+                .on('error', function (err) {
+                    console.log('Unable to read data stream!', err)
+                    reject(`addDataToLevelDB Failed !! for height ${data}`);
+                })
+                .on('close', function () {
+                    console.log('');
+                    console.log(`Begninig adding Block # ${i}`, data);
+                    self.addLevelDBData(i, data).then((writtenBlock) => {
+                        console.log('Done block adding .... Block added #' + writtenBlock);
+                        console.log('');
+                    }, (reject) => {
+                        console.log('Failed to add block #' + i);
+                    });
+                });
+        });
+    }
+
+    getBlock(height) {
+        let self = this;
+        return new Promise(function (resolve, reject) {
+            self.getLevelDBData(height - 1).then((result) => {
+
+                console.log(`Result :::   ${JSON.stringify(result)} `);
+                console.log(result)
+                resolve(result);
+            });
+        });
+
+
+        // let self = this;
+        // const dataArray = [];
+        // return new Promise(function (resolve, reject) {
+        //     // Add your code here, remember in Promises you need to resolve() or reject()
+        //     self.db.createReadStream()
+        //         .on('data', function (data) {
+        //             dataArray.push(data);
+        //         })
+        //         .on('error', function (err) {
+        //             reject(err);
+        //         })
+        //         .on('close', function () {
+        //             console.log(`Getting block for height ${height}, Length = ${dataArray.length}`);
+        //             if (height <= dataArray.length) {
+        //                 let blockData;
+        //                 if (height - 1 <= 0) {
+        //                     blockData = dataArray[0];
+        //                 } else {
+        //                     blockData = dataArray[height - 1];
+        //                 }
+        //                 console.log('Result ::: ', blockData.value.Block);
+        //                 console.log('%j', blockData.value.Block)
+        //                 resolve(blockData);
+        //                 // self.getLevelDBData(blockData.key).then((result) => {
+        //                 //     console.log('Result ', util.inspect(result, false, null))
+        //                 //     console.log('Result ::: ', result);
+        //                 //     resolve(result);
+        //                 // })
+        //             } else {
+        //                 reject(`Block at height ${height} not found... `);
+        //             }
+
+        //         });
+        // });
+    }
 }
 
 module.exports.LevelSandbox = LevelSandbox;
