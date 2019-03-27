@@ -36,7 +36,7 @@ class Blockchain {
     addBlock(block) {
         // Add your code here
         return this.getBlockHeight().then((chainLength) => {
-            console.log(`Current Chain length :::: `, chainLength);
+            // console.log(`Current Chain length :::: `, chainLength);
             // Block height
             block.height = chainLength;
             // UTC timestamp
@@ -70,7 +70,7 @@ class Blockchain {
         const self = this;
         return new Promise(function (resolve, reject) {
             self.getBlockHeight().then((chainLength) => {
-                if (height <= chainLength) {
+                if (chainLength > 0 && height <= chainLength) {
                     resolve(self.db.getBlock(height));
                 } else {
                     reject('Invalid block height !!!');
