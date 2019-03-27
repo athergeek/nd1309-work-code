@@ -6,11 +6,9 @@ const level = require('level');
 const chainDB = './chaindata';
 
 class LevelSandbox {
-
     constructor() {
         this.db = level(chainDB);
     }
-
     // Get data from levelDB with key (Promise)
     getLevelDBData(key) {
         let self = this;
@@ -31,12 +29,11 @@ class LevelSandbox {
         let self = this;
         return new Promise(function (resolve, reject) {
             // Add your code here, remember in Promises you need to resolve() or reject() 
-            self.db.put(key, value, function (success, err) {
+            self.db.put(key, JSON.stringify(value), function (success, err) {
                 if (err) {
                     console.log('Put Failed!', err);
                     reject(`(${key},${value}) put failed!!!`);
                 }
-                console.log(`Block Written ....  ${JSON.stringify(key)},${JSON.stringify(value)} `);
                 resolve(`${JSON.stringify(key)}, ${JSON.stringify(value)} put successfull...`);
             });
         });
@@ -76,9 +73,8 @@ class LevelSandbox {
                 })
                 .on('close', function () {
                     console.log('');
-                    console.log(`Begninig adding Block # ${i}`, data);
+                    console.log(`Adding Block # ${i}`, data);
                     self.addLevelDBData(i, data).then((writtenBlock) => {
-                        console.log('Done block adding .... Block added #' + writtenBlock);
                         console.log('');
                     }, (reject) => {
                         console.log('Failed to add block #' + i);
@@ -90,49 +86,11 @@ class LevelSandbox {
     getBlock(height) {
         let self = this;
         return new Promise(function (resolve, reject) {
-            self.getLevelDBData(height - 1).then((result) => {
-
-                console.log(`Result :::   ${JSON.stringify(result)} `);
-                console.log(result)
+            height = (height - 1) <= 0 ? 0 : height - 1;
+            self.getLevelDBData(height).then((result) => {
                 resolve(result);
             });
         });
-
-
-        // let self = this;
-        // const dataArray = [];
-        // return new Promise(function (resolve, reject) {
-        //     // Add your code here, remember in Promises you need to resolve() or reject()
-        //     self.db.createReadStream()
-        //         .on('data', function (data) {
-        //             dataArray.push(data);
-        //         })
-        //         .on('error', function (err) {
-        //             reject(err);
-        //         })
-        //         .on('close', function () {
-        //             console.log(`Getting block for height ${height}, Length = ${dataArray.length}`);
-        //             if (height <= dataArray.length) {
-        //                 let blockData;
-        //                 if (height - 1 <= 0) {
-        //                     blockData = dataArray[0];
-        //                 } else {
-        //                     blockData = dataArray[height - 1];
-        //                 }
-        //                 console.log('Result ::: ', blockData.value.Block);
-        //                 console.log('%j', blockData.value.Block)
-        //                 resolve(blockData);
-        //                 // self.getLevelDBData(blockData.key).then((result) => {
-        //                 //     console.log('Result ', util.inspect(result, false, null))
-        //                 //     console.log('Result ::: ', result);
-        //                 //     resolve(result);
-        //                 // })
-        //             } else {
-        //                 reject(`Block at height ${height} not found... `);
-        //             }
-
-        //         });
-        // });
     }
 }
 
