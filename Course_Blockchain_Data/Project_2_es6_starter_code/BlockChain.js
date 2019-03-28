@@ -19,23 +19,32 @@ class Blockchain {
     // will not create the genesis block
     generateGenesisBlock() {
         // Add your code here
-        this.getBlockHeight().then((chainLength) => {
-            if (chainLength === 0) {
+        this.getBlockHeight().then((blockHeight) => {
+            if (blockHeight === 0) {
                 this.addBlock(new Block.Block("First block in the chain - Genesis block"));
             }
         });
     }
 
-    // Get block height, it is a helper method that return the height of the blockchain
+    // Get block height, it is a helper method that return the height of the current block ( most rescent block ).
     getBlockHeight() {
         // Add your code here
-        return this.db.getBlocksCount();
+        return new Promise((resolve, reject) => {
+            this.db.getBlocksCount().then((chainLength) => {
+                if (chainLength - 1 <= 0) {
+                    resolve(0);
+                } else {
+                    resolve(chainLength - 1);
+                }
+            });
+        });
+
     }
 
     // Add new block
     addBlock(block) {
         // Add your code here
-        return this.getBlockHeight().then((chainLength) => {
+        return this.db.getBlocksCount().then((chainLength) => {
             // console.log(`Current Chain length :::: `, chainLength);
             // Block height
             block.height = chainLength;
@@ -43,7 +52,7 @@ class Blockchain {
             block.time = new Date().getTime().toString().slice(0, -3);
             // previous block hash
             if (chainLength > 0) {
-                this.getBlock(chainLength).then((blockData) => {
+                this.getBlock(chainLength - 1).then((blockData) => {
                     const previousBlock = JSON.parse(blockData);
                     block.previousBlockHash = previousBlock.hash;
                     // Block hash with SHA256 using newBlock and converting to a string
@@ -69,8 +78,8 @@ class Blockchain {
         // Add your code here
         const self = this;
         return new Promise(function (resolve, reject) {
-            self.getBlockHeight().then((chainLength) => {
-                if (chainLength > 0 && height <= chainLength) {
+            self.getBlockHeight().then((blockHeight) => {
+                if (height >= 0 && height <= blockHeight) {
                     resolve(self.db.getBlock(height));
                 } else {
                     reject('Invalid block height !!!');

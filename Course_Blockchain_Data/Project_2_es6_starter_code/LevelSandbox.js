@@ -86,7 +86,6 @@ class LevelSandbox {
     getBlock(height) {
         let self = this;
         return new Promise(function (resolve, reject) {
-            height = (height - 1) <= 0 ? 0 : height - 1;
             self.getLevelDBData(height).then((result) => {
                 resolve(result);
             });
