@@ -26,7 +26,16 @@ class BlockController {
             method: 'GET',
             path: '/api/block/{index}',
             handler: (request, h) => {
-               
+                // Add your code here            
+                const blockNumber = request.params['index'];
+                if (blockNumber < 0) {
+                    res.send('Invalid block number.');
+                }
+                if (this.blocks.length <= 0 || blockNumber > this.blocks.length) {
+                    res.send('Invalid block requested.');
+                }
+                const blockToReturn = this.blocks[blockNumber];
+                return blockToReturn;
             }
         });
     }
@@ -39,7 +48,11 @@ class BlockController {
             method: 'POST',
             path: '/api/block',
             handler: (request, h) => {
-                
+                console.log(request.payload);
+                return {
+                    message: "Data received successfully",
+                    data: request.payload
+                };
             }
         });
     }
@@ -48,7 +61,7 @@ class BlockController {
      * Help method to inizialized Mock dataset, adds 10 test blocks to the blocks array
      */
     initializeMockData() {
-        if(this.blocks.length === 0){
+        if (this.blocks.length === 0) {
             for (let index = 0; index < 10; index++) {
                 let blockAux = new BlockClass.Block(`Test Data #${index}`);
                 blockAux.height = index;
@@ -65,4 +78,6 @@ class BlockController {
  * Exporting the BlockController class
  * @param {*} server 
  */
-module.exports = (server) => { return new BlockController(server);}
+module.exports = (server) => {
+    return new BlockController(server);
+}
