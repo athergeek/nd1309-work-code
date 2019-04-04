@@ -42,7 +42,7 @@ class BlockController {
     postNewBlock() {
         this.app.post("/api/block", (req, res) => {
             console.log(req.body);
-            res.json('Data received .... ');
+            res.json('Data received ..... ');
         });
     }
 
