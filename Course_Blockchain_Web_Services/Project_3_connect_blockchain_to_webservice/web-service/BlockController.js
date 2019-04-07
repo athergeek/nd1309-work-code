@@ -1,4 +1,5 @@
 const BlockChain = require('../BlockChain.js');
+const Block = require('../Block.js');
 const Boom = require('boom');
 
 /**
@@ -14,6 +15,7 @@ class BlockController {
         this.server = server;
         this.blockChain = new BlockChain.Blockchain();
         this.getBlockByIndex();
+        this.postNewBlock();
     }
 
     /**
@@ -27,9 +29,39 @@ class BlockController {
             handler: (request, h) => {
                 // Add your code here            
                 blockNumber = request.params['index'];
-                return this.blockChain.getBlock(blockNumber).then((block) => {}).catch((err) => {
+                return this.blockChain.getBlock(blockNumber).then((block) => {
+                    return block;
+                }).catch((err) => {
                     throw Boom.notFound(`Failed to retrieve block number ${blockNumber}.. ERROR :::: ${err}`)
                 });
+            }
+        });
+    }
+
+    /**
+     * Implement a POST Endpoint to add a new Block, url: "/api/block"
+     */
+    postNewBlock() {
+        this.server.route({
+            method: 'POST',
+            path: '/api/block',
+            handler: (request, h) => {
+                if (request.payload && request.payload.body) {
+                    console.log(request.payload);
+                    let newBlock = new Block.Block(request.payload.body);
+                    return this.blockChain.addBlock(newBlock).then((result) => {
+                        console.log(result);
+                        return {
+                            message: "Data received successfully",
+                            data: request.payload
+                        };
+                    }).catch((err) => {
+                        console.log(err);
+                        throw Boom.badGateway(`Failed to create block.. ERROR :::: ${err}`);
+                    });
+                } else {
+                    throw Boom.badRequest('Failed to create block. No data was provided');
+                }
             }
         });
     }
