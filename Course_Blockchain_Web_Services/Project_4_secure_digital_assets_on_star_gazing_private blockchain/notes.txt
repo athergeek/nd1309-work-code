@@ -1,0 +1,75 @@
+// Block data model
+{
+    "hash" : "",
+    "height" : 0,
+    "body": [],
+    "time": 0,
+    previousblockhash: ""
+
+}
+
+// Start data
+{
+	name: 'Gienah',
+	rightAscension: {
+		hour: 12,
+		minute: 15,
+		second: 48
+	},
+	declination: {
+		degree: 17,
+		minute: 32,
+		second: 31
+		
+	},
+	centaurus: 'Corvus',
+	magnitude: 2.59
+},
+{
+	name: 'Rasalas',
+	rightAscension: {
+		hour: 09,
+		minute: 52,
+		second: 45
+	},
+	declination: {
+		degree: 26,
+		minute: 0,
+		second: 24
+		
+	},
+	centaurus: 'Leo',
+	magnitude: 5.49
+},
+{
+	name: 'Regulus',
+	rightAscension: {
+		hour: 11,
+		minute: 49,
+		second: 03
+	},
+	declination: {
+		degree: 14,
+		minute: 34,
+		second: 20
+		
+	},
+	centaurus: 'Leo',
+	magnitude: 1.41
+},
+{
+	name: 'Denebola',
+	rightAscension: {
+		hour: 10,
+		minute: 08,
+		second: 22
+	},
+	declination: {
+		degree: 11,
+		minute: 58,
+		second: 01
+		
+	},
+	centaurus: 'Leo',
+	magnitude: 2.3
+}
