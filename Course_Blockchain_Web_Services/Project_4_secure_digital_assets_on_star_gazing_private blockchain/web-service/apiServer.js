@@ -1,4 +1,6 @@
-const Hapi = require('hapi');
+const express = require('express')
+const bodyParser = require('body-parser');
+const boom = require('express-boom');
 
 /**
  * Class Definition for the REST API
@@ -6,30 +8,39 @@ const Hapi = require('hapi');
 class ApiServer {
 
     /**
-     * Constructor that allows initialize the class 
+     * Constructor that allows us to initialize the class 
      */
     constructor() {
-        this.server = Hapi.Server({
-            port: 8000,
-            host: 'localhost'
-        });
-
-        this.server.route({
-            method: '*',
-            path: '/{any*}',
-            handler: function (request, h) {
-                return '404 Error! Page Not Found!';
-            }
-        });
+        this.app = express();
+        this.initExpress();
+        this.initExpressMiddleWare();
         this.initControllers();
         this.start();
     }
 
     /**
-     * Initilization of all the controllers
+     * Initialization of the Express framework
+     */
+    initExpress() {
+        this.app.set("port", 8000);
+    }
+
+    /**
+     * Initialization of the middleware modules
+     */
+    initExpressMiddleWare() {
+        this.app.use(bodyParser.urlencoded({
+            extended: true
+        }));
+        this.app.use(bodyParser.json());
+        this.app.use(boom());
+    }
+
+    /**
+     * Initialization of all the controllers
      */
     initControllers() {
-        require("./BlockController.js")(this.server);
+        require("./BlockController.js")(this.app);
     }
 
     async start() {
@@ -37,6 +48,15 @@ class ApiServer {
         console.log(`Server running at: ${this.server.info.uri}`);
     }
 
-}
+    /**
+     * Starting the REST Api application
+     */
+    start() {
+        let self = this;
+        this.app.listen(this.app.get("port"), () => {
+            console.log(`Server Listening for port: ${self.app.get("port")}`);
+        });
+    }
 
+}
 new ApiServer();
