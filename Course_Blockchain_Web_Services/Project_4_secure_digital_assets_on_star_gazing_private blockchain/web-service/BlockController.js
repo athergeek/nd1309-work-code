@@ -5,7 +5,6 @@ const Block = require('../Block.js');
  * Controller Definition to encapsulate routes to work with blocks
  */
 class BlockController {
-
     /**
      * Constructor to create a new BlockController, you need to initialize here all your endpoints
      * @param {*} server 
@@ -13,8 +12,9 @@ class BlockController {
     constructor(server) {
         this.app = server;
         this.blockChain = new BlockChain.Blockchain();
+        this.memPool = {};
+        this.addValidationRequest();
         this.validateRequest();
-        this.validateMessage();
         this.postNewBlock();
         this.getStarByHash();
         this.getStarByAddress();
@@ -23,15 +23,35 @@ class BlockController {
 
     }
 
-    validateRequest() {
+    addValidationRequest() {
         this.app.post("/requestValidation", (req, res) => {
             // Add your code here
             console.log('validateRequest called....', req.body);
-            res.send(req.body);
+            const walletAddress = req.body.address;
+            const requestTimeStamp = new Date().getTime().toString().slice(0, -3);
+            let response = {
+                "walletAddress": req.body.address,
+                "requestTimeStamp": requestTimeStamp,
+                "message": `${walletAddress}:${requestTimeStamp}:Registry`,
+                "validationWindow": 300
+            }
+
+
+            if (this.memPool[walletAddress]) { // Request is already in mempool.
+                const requestFound = this.memPool[walletAddress];
+                const timeSinceFirstRequestInSeconds = (requestTimeStamp - requestFound.requestTimeStamp);
+                requestFound.validationWindow = requestFound.validationWindow - timeSinceFirstRequestInSeconds;
+                requestFound.requestTimeStamp = requestTimeStamp;
+                requestFound.message = `${walletAddress}:${requestTimeStamp}:Registry`
+                response = requestFound;
+            } else {
+                this.memPool[walletAddress] = response;
+            }
+            res.send(response);
         });
     }
 
-    validateMessage() {
+    validateRequest() {
         this.app.post("/message-signature/validate", (req, res) => {
             // Add your code here
             console.log('validateMessage called....', req.body);
@@ -41,8 +61,23 @@ class BlockController {
 
     postNewBlock() {
         this.app.post("/block", (req, res) => {
-            // Add your code here
-            console.log('postNewBlock called....', req.body);
+            // Add your code here ---Verify address request
+            if (req.body) {
+                console.log('postNewBlock called....', req.body);
+                let newBlock = new Block.Block(request.body);
+                return this.blockChain.addBlock(newBlock).then((result) => {
+                    console.log(result);
+                    res.json({
+                        message: "Data received successfully",
+                        data: req.body
+                    });
+                }).catch((err) => {
+                    console.log(err);
+                    res.Boom.badGateway(`Failed to create block.. ERROR :::: ${err}`);
+                });
+            } else {
+                res.Boom.badRequest('Failed to create block. No data was provided');
+            }
             res.send(req.body);
         });
     }
