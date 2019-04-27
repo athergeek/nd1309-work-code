@@ -1,3 +1,4 @@
+const bitcoinMessage = require('bitcoinjs-message');
 const BlockChain = require('../BlockChain.js');
 const Block = require('../Block.js');
 
@@ -12,6 +13,7 @@ class BlockController {
     constructor(server) {
         this.app = server;
         this.blockChain = new BlockChain.Blockchain();
+        this.timeoutRequests = {};
         this.memPool = {};
         this.addValidationRequest();
         this.validateRequest();
@@ -34,18 +36,19 @@ class BlockController {
                 "requestTimeStamp": requestTimeStamp,
                 "message": `${walletAddress}:${requestTimeStamp}:Registry`,
                 "validationWindow": 300
+
             }
 
 
-            if (this.memPool[walletAddress]) { // Request is already in mempool.
-                const requestFound = this.memPool[walletAddress];
+            if (this.timeoutRequests[walletAddress]) { // Request is already in mempool.
+                const requestFound = this.timeoutRequests[walletAddress];
                 const timeSinceFirstRequestInSeconds = (requestTimeStamp - requestFound.requestTimeStamp);
                 requestFound.validationWindow = requestFound.validationWindow - timeSinceFirstRequestInSeconds;
                 requestFound.requestTimeStamp = requestTimeStamp;
                 requestFound.message = `${walletAddress}:${requestTimeStamp}:Registry`
                 response = requestFound;
             } else {
-                this.memPool[walletAddress] = response;
+                this.timeoutRequests[walletAddress] = response;
             }
             res.send(response);
         });
@@ -54,8 +57,40 @@ class BlockController {
     validateRequest() {
         this.app.post("/message-signature/validate", (req, res) => {
             // Add your code here
-            console.log('validateMessage called....', req.body);
-            res.send(req.body);
+            const walletAddress = req.body.address;
+            const signature = req.body.signature;
+            let message = '';
+            let validationWindow = 0;
+            const requestTimeStamp = new Date().getTime().toString().slice(0, -3);
+            if (this.timeoutRequests[walletAddress] && this.timeoutRequests[walletAddress].validationWindow > 0) {
+                message = this.timeoutRequests[walletAddress].message;
+                validationWindow = this.timeoutRequests[walletAddress].validationWindow;
+                isValid = bitcoinMessage.verify(message, address, signature);
+            } else {
+                isValid = false;
+            }
+
+            if (isValid) {
+                const validRequest = {
+                    registerStar: true,
+                    status = {
+                        address: walletAddress,
+                        requestTimeStamp: requestTimeStamp,
+                        message: message,
+                        validationWindow: validationWindow,
+                        messageSignature: valid
+                    }
+                }
+                // Add the request to mempool
+                this.memPool[walletAddress] = validRequest;
+                // remove it from time out queue
+                if (this.timeoutRequests[walletAddress]) {
+                    delete this.timeoutRequests[walletAddress];
+                }
+                res.json(validRequest);
+            } else {
+                res.Boom.badRequest('Request is not valid');
+            }
         });
     }
 
@@ -67,10 +102,7 @@ class BlockController {
                 let newBlock = new Block.Block(request.body);
                 return this.blockChain.addBlock(newBlock).then((result) => {
                     console.log(result);
-                    res.json({
-                        message: "Data received successfully",
-                        data: req.body
-                    });
+                    res.json(newBlock);
                 }).catch((err) => {
                     console.log(err);
                     res.Boom.badGateway(`Failed to create block.. ERROR :::: ${err}`);
@@ -86,6 +118,7 @@ class BlockController {
         this.app.get("/stars/hash/:hash", (req, res) => {
             // Add your code here
             const hash = req.params['hash'];
+
             console.log('getStarByHash called....', hash);
             res.send(hash);
         });
@@ -104,68 +137,16 @@ class BlockController {
         this.app.get("/block/:height", (req, res) => {
             // Add your code here
             const height = req.params['height'];
+            return this.blockChain.getBlock(height).then((block) => {
+                return block;
+            }).catch((err) => {
+                throw Boom.notFound(`Failed to retrieve block number ${blockNumber}.. ERROR :::: ${err}`)
+            });
+
             console.log('getStarByBlockHeight called....', height);
             res.send(height);
         });
     }
-
-    getStarByName() {
-        this.app.get("/stars/name/:name", (req, res) => {
-            // Add your code here
-            const name = req.params['name'];
-            console.log('getStarByName called....', name);
-            res.send(name);
-        });
-    }
-
-
-    /**
-     * Implement a GET Endpoint to retrieve a block by index, url: "/api/block/:index"
-     */
-    // getBlockByIndex() {
-    //     let blockNumber = 0;
-    //     this.server.route({
-    //         method: 'GET',
-    //         path: '/api/block/{index}',
-    //         handler: (request, h) => {
-    //             // Add your code here            
-    //             blockNumber = request.params['index'];
-    //             return this.blockChain.getBlock(blockNumber).then((block) => {
-    //                 return block;
-    //             }).catch((err) => {
-    //                 throw Boom.notFound(`Failed to retrieve block number ${blockNumber}.. ERROR :::: ${err}`)
-    //             });
-    //         }
-    //     });
-    // }
-
-    /**
-     * Implement a POST Endpoint to add a new Block, url: "/api/block"
-     */
-    // postNewBlock() {
-    //     this.server.route({
-    //         method: 'POST',
-    //         path: '/api/block',
-    //         handler: (request, h) => {
-    //             if (request.payload && request.payload.body) {
-    //                 console.log(request.payload);
-    //                 let newBlock = new Block.Block(request.payload.body);
-    //                 return this.blockChain.addBlock(newBlock).then((result) => {
-    //                     console.log(result);
-    //                     return {
-    //                         message: "Data received successfully",
-    //                         data: request.payload
-    //                     };
-    //                 }).catch((err) => {
-    //                     console.log(err);
-    //                     throw Boom.badGateway(`Failed to create block.. ERROR :::: ${err}`);
-    //                 });
-    //             } else {
-    //                 throw Boom.badRequest('Failed to create block. No data was provided');
-    //             }
-    //         }
-    //     });
-    // }
 }
 
 /**
