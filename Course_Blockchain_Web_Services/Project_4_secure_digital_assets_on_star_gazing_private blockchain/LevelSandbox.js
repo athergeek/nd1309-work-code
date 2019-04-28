@@ -83,10 +83,10 @@ class LevelSandbox {
         });
     }
 
-    getBlock(height) {
+    getBlock(key) {
         let self = this;
         return new Promise(function (resolve, reject) {
-            self.getLevelDBData(height).then((result) => {
+            self.getLevelDBData(key).then((result) => {
                 resolve(result);
             });
         });

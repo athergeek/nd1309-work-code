@@ -21,7 +21,6 @@ class BlockController {
         this.getStarByHash();
         this.getStarByAddress();
         this.getStarByBlockHeight();
-        this.getStarByName();
 
     }
 
@@ -35,10 +34,8 @@ class BlockController {
                 "walletAddress": req.body.address,
                 "requestTimeStamp": requestTimeStamp,
                 "message": `${walletAddress}:${requestTimeStamp}:Registry`,
-                "validationWindow": 300
-
+                "validationWindow": 300,
             }
-
 
             if (this.timeoutRequests[walletAddress]) { // Request is already in mempool.
                 const requestFound = this.timeoutRequests[walletAddress];
@@ -49,6 +46,15 @@ class BlockController {
                 response = requestFound;
             } else {
                 this.timeoutRequests[walletAddress] = response;
+                this.timeoutRequests[`${walletAddress} - timer`] = setTimeout(() => {
+                    if (this.timeoutRequests[walletAddress]) {
+                        // Remove the request once the time expires
+                        delete this.timeoutRequests[walletAddress];
+                        // Remove the timer itself.
+                        delete this.timeoutRequests[`${walletAddress} - timer`];
+                    }
+                }, 300000); // 5 Minute window ( time in milliseconds)
+
             }
             res.send(response);
         });
@@ -59,10 +65,12 @@ class BlockController {
             // Add your code here
             const walletAddress = req.body.address;
             const signature = req.body.signature;
+            let isWindowValid;
             let message = '';
             let validationWindow = 0;
             const requestTimeStamp = new Date().getTime().toString().slice(0, -3);
-            if (this.timeoutRequests[walletAddress] && this.timeoutRequests[walletAddress].validationWindow > 0) {
+            if (this.timeoutRequests[walletAddress]) {
+                isWindowValid = this.timeoutRequests[walletAddress].validationWindow > 0;
                 message = this.timeoutRequests[walletAddress].message;
                 validationWindow = this.timeoutRequests[walletAddress].validationWindow;
                 isValid = bitcoinMessage.verify(message, address, signature);
@@ -70,15 +78,15 @@ class BlockController {
                 isValid = false;
             }
 
-            if (isValid) {
+            if (isValid && isWindowValid) {
                 const validRequest = {
-                    registerStar: true,
-                    status = {
-                        address: walletAddress,
-                        requestTimeStamp: requestTimeStamp,
-                        message: message,
-                        validationWindow: validationWindow,
-                        messageSignature: valid
+                    "registerStar": true,
+                    "status": {
+                        "address": walletAddress,
+                        "requestTimeStamp": requestTimeStamp,
+                        "message": message,
+                        "validationWindow": validationWindow,
+                        "messageSignature": valid
                     }
                 }
                 // Add the request to mempool
@@ -86,10 +94,15 @@ class BlockController {
                 // remove it from time out queue
                 if (this.timeoutRequests[walletAddress]) {
                     delete this.timeoutRequests[walletAddress];
+                    delete this.timeoutRequests[`${walletAddress} - timer`];
                 }
                 res.json(validRequest);
             } else {
-                res.Boom.badRequest('Request is not valid');
+                if (!isWindowValid) {
+                    res.Boom.badRequest('Request Validation Window Expired !!!');
+                } else {
+                    res.Boom.badRequest('Request is not valid');
+                }
             }
         });
     }
@@ -119,7 +132,11 @@ class BlockController {
             // Add your code here
             const hash = req.params['hash'];
 
-            console.log('getStarByHash called....', hash);
+            this.blockChain.getBlock(hash).then((block) => {
+                res.json(block);
+            }).catch((err) => {
+                throw Boom.notFound(`Failed to retrieve block number ${blockNumber}.. ERROR :::: ${err}`)
+            });
             res.send(hash);
         });
     }
@@ -128,7 +145,12 @@ class BlockController {
         this.app.get("/stars/address/:address", (req, res) => {
             // Add your code here
             const address = req.params['address'];
-            console.log('getStarByAddress called....', address);
+            this.blockChain.getBlock(address).then((block) => {
+                res.json(block);
+            }).catch((err) => {
+                throw Boom.notFound(`Failed to retrieve block number ${blockNumber}.. ERROR :::: ${err}`)
+            });
+
             res.send(address);
         });
     }
@@ -137,14 +159,11 @@ class BlockController {
         this.app.get("/block/:height", (req, res) => {
             // Add your code here
             const height = req.params['height'];
-            return this.blockChain.getBlock(height).then((block) => {
-                return block;
+            this.blockChain.getBlock(height).then((block) => {
+                res.json(block);
             }).catch((err) => {
                 throw Boom.notFound(`Failed to retrieve block number ${blockNumber}.. ERROR :::: ${err}`)
             });
-
-            console.log('getStarByBlockHeight called....', height);
-            res.send(height);
         });
     }
 }
