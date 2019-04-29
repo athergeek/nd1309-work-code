@@ -43,34 +43,39 @@ class Blockchain {
 
     // Add new block
     addBlock(block) {
-        // Add your code here
-        return this.db.getBlocksCount().then((chainLength) => {
-            // console.log(`Current Chain length :::: `, chainLength);
-            // Block height
-            block.height = chainLength;
-            // UTC timestamp
-            block.time = new Date().getTime().toString().slice(0, -3);
-            // previous block hash
-            if (chainLength > 0) {
-                this.getBlock(chainLength - 1).then((blockData) => {
-                    const previousBlock = JSON.parse(blockData);
-                    block.previousBlockHash = previousBlock.hash;
+        return new Promise((resolve, reject) => {
+
+            // Add your code here
+            this.db.getBlocksCount().then((chainLength) => {
+                // console.log(`Current Chain length :::: `, chainLength);
+                // Block height
+                block.height = chainLength;
+                // UTC timestamp
+                block.time = new Date().getTime().toString().slice(0, -3);
+                // previous block hash
+                if (chainLength > 0) {
+                    this.getBlock(chainLength - 1).then((blockData) => {
+                        const previousBlock = JSON.parse(blockData);
+                        block.previousBlockHash = previousBlock.hash;
+                        // Block hash with SHA256 using newBlock and converting to a string
+                        block.hash = SHA256(JSON.stringify(block)).toString();
+                        // Adding block object to chain
+                        this.db.addDataToLevelDB(block);
+                        resolve(block);
+                    }, (error) => {
+                        console.log('get block failed !!!!!', error);
+                    });
+                } else {
                     // Block hash with SHA256 using newBlock and converting to a string
                     block.hash = SHA256(JSON.stringify(block)).toString();
                     // Adding block object to chain
-                    return this.db.addDataToLevelDB(block);
-                }, (error) => {
-                    console.log('get block failed !!!!', error);
-                });
-            } else {
-                // Block hash with SHA256 using newBlock and converting to a string
-                block.hash = SHA256(JSON.stringify(block)).toString();
-                // Adding block object to chain
-                return this.db.addDataToLevelDB(block);
-            }
-        }, (error) => {
-            console.log('Add Block Failed !!!!', error);
+                    this.db.addDataToLevelDB(block);
+                }
+            }, (error) => {
+                console.log('Add Block Failed !!!!', error);
+            });
         });
+
     }
 
     // Get Block By Height

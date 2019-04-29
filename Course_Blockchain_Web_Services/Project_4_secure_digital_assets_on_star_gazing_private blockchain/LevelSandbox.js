@@ -76,6 +76,7 @@ class LevelSandbox {
                     console.log(`Adding Block # ${i}`, data);
                     self.addLevelDBData(i, data).then((writtenBlock) => {
                         console.log('');
+                        resolve(writtenBlock);
                     }, (reject) => {
                         console.log('Failed to add block #' + i);
                     });
