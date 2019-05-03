@@ -93,6 +93,37 @@ class Blockchain {
         });
     }
 
+    // Get Block(s) By specified height
+    getBlockByAddress(blockAddress) {
+        // Add your code here
+        const self = this;
+        console.log('blockAddress ::: ', blockAddress);
+        return new Promise(function (resolve, reject) {
+            if (blockAddress) {
+                self.db.getBlocksByAddress(blockAddress).then((blocks) => {
+                    resolve(blocks);
+                });
+            } else {
+                reject('Invalid block address !!!');
+            }
+        });
+    }
+
+    // Get Block(s) By specified hash
+    getBlockByHash(blockHash) {
+        // Add your code here
+        const self = this;
+        return new Promise(function (resolve, reject) {
+            if (blockHash) {
+                self.db.getBlockByHash(blockHash).then((block) => {
+                    resolve(block);
+                });
+            } else {
+                reject('Invalid block hash !!!');
+            }
+        });
+    }
+
     // Get Block By Height
     getBlockOnHeight(height) {
         // Add your code here

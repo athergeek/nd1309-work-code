@@ -1,6 +1,6 @@
-# Project #3.  Connect Private Blockchain to Front-End Client via APIs
+# Project #4. Secure Digital Assets on a Private Blockchain.
 
-This is Project 3,  Connect Private Blockchain to Front-End Client via APIs, in this project I developed a webservice using node based framework called Hapi. The error handling was done using a package called boom.
+This is Project 4,  Secure Digital Assets on a Private Blockchain, in this project I developed a webservice using node based framework called Express. The error handling was done using a package called boom.
 
 A server and the api controllser are in folder ***web-service***
 
@@ -15,21 +15,54 @@ To setup the project for review do the following:
 
 ## What API endpoints are provided.
 
-Following two api endpoints are provdied as part of this project.
+Following api endpoints are provdied as part of this project.
 
-***getBlockByIndex***
+***addValidationRequest***
 
-Returns the block data in json format for the specified block index
-
-Method Type: GET
-
-url: http://locatlhost:8000/api/block/{lockindex}
-
-
-***postNewBlock***
-
-Adds a new block to the blockchain. The specified data goes into the block as part of the data property of the block.
+Adds validation request to the validation queue.
 
 Method Type: POST
 
-url: http://locatlhost:8000/api/block
+url: http://locatlhost:8000/requestValidation
+
+
+***validateRequest***
+
+Validates a request and once validated, request is removed from the validation queue and placed in a different queue.
+
+Method Type: POST
+
+url: http://locatlhost:8000/message-signature/validate
+
+***postNewBlock***
+
+Post a new block to the database.
+
+Method Type: POST
+
+url: http://locatlhost:8000/block
+
+***getStarByHash***
+
+Returns star for given hash
+
+Method Type: GET
+
+url: http://locatlhost:8000/stars/hash/{hash}
+
+
+***getStarByAddress***
+
+Returns star for given address
+
+Method Type: GET
+
+url: http://locatlhost:8000//stars/address/{address}
+
+***getStarByBlockHeight***
+
+Returns star for given block height
+
+Method Type: GET
+
+url: http://locatlhost:8000//block/{height}

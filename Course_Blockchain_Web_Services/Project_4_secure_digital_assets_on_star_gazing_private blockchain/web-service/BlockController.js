@@ -79,19 +79,21 @@ class BlockController {
                 const timeSinceFirstValidationInSeconds = (requestTimeStamp - validRequest.status.requestTimeStamp);
                 validRequest.status.validationWindow = validRequest.status.validationWindow - timeSinceFirstValidationInSeconds;
                 validRequest.status.requestTimeStamp = requestTimeStamp;
+                validRequest.status.message = `${signature}:${requestTimeStamp}:starRegistry`;
                 res.json(validRequest);
             } else {
 
                 isValidRequest = this.isRequestValidForAddress(walletAddress, signature);
 
                 if (isValidRequest) {
+                    message = `${signature}:${requestTimeStamp}:starRegistry`;
                     const validRequest = {
                         "registerStar": true,
                         "status": {
                             "address": walletAddress,
                             "requestTimeStamp": requestTimeStamp,
                             "message": message,
-                            "validationWindow": 1800, // 30 minutes, 1800 seconds
+                            "validationWindow": this.timeoutRequests[walletAddress].validationWindow,
                             "messageSignature": isValidRequest
                         }
                     }
@@ -110,8 +112,8 @@ class BlockController {
                         }
                     }, 1800000); // 30 Minutes window ( time in milliseconds)
 
-                    // pre-validation clean-up
-                    this.preValidationCleanup(walletAddress);
+                    // post-validation clean-up
+                    this.postValidationCleanup(walletAddress);
                     res.json(validRequest);
                 } else {
                     res.boom.badRequest('Request Validation Window Expired !!!');
@@ -155,10 +157,10 @@ class BlockController {
             // Add your code here
             const hash = req.params['hash'];
 
-            this.blockChain.getBlock(hash).then((block) => {
-                console.log('Returned Block :::: ', block);
-                const data = JSON.parse(block);
-                data.body.star.storyDecoded = new Buffer(block.body.star.story, 'base64').toString();
+            this.blockChain.getBlockByHash(hash).then((block) => {
+                const data = JSON.parse(block.value);
+                // console.log('Returned Block By Hash :::: ', data);
+                data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
                 res.send(data);
             }).catch((err) => {
                 throw res.boom.notFound(`Failed to retrieve block for hash ${hash}.. ERROR :::: ${err}`)
@@ -170,12 +172,16 @@ class BlockController {
         this.app.get("/stars/address/:address", (req, res) => {
             // Add your code here
             const address = req.params['address'];
-            this.blockChain.getBlock(address).then((block) => {
-                const data = JSON.parse(block);
-                data.body.star.storyDecoded = new Buffer(block.body.star.story, 'base64').toString();
-                res.send(data);
+            this.blockChain.getBlockByAddress(address).then((data) => {
+                let blocks = [];
+                for (let i = 0; i < data.length; i++) {
+                    const block = JSON.parse(data[i].value);
+                    block.body.star.storyDecoded = new Buffer(block.body.star.story, 'base64').toString();
+                    blocks.push(block);
+                }
+                res.send(blocks);
             }).catch((err) => {
-                throw boom.notFound(`Failed to retrieve block number ${blockNumber}.. ERROR :::: ${err}`)
+                throw res.boom.notFound(`Failed to retrieve block(s) for address ${address}.. ERROR :::: ${err}`)
             });
 
         });
@@ -185,17 +191,22 @@ class BlockController {
         this.app.get("/block/:height", (req, res) => {
             // Add your code here
             const height = req.params['height'];
-            this.blockChain.getBlock(height).then((block) => {
-                const data = JSON.parse(block);
-                data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
-                res.send(data);
-            }).catch((err) => {
-                throw res.boom.notFound(`Failed to retrieve block for heght ${height}.. ERROR :::: ${err}`)
-            });
+            if (height > 1) {
+                this.blockChain.getBlock(height).then((block) => {
+                    const data = JSON.parse(block);
+                    data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
+                    res.send(data);
+                }).catch((err) => {
+                    throw res.boom.notFound(`Failed to retrieve block for heght ${height}.. ERROR :::: ${err}`)
+                });
+
+            } else {
+                throw res.boom.notFound(`No star data exists at the Genesis block.`);
+            }
         });
     }
 
-    preValidationCleanup(walletAddress) {
+    postValidationCleanup(walletAddress) {
         if (this.timeoutRequests[walletAddress]) {
             // remove it from request time out queue
             delete this.timeoutRequests[walletAddress];

@@ -58,6 +58,67 @@ class LevelSandbox {
         });
     }
 
+    // Get block by hash
+    getBlockByHash(hash) {
+        let self = this;
+        let block = null;
+        return new Promise(function (resolve, reject) {
+            self.db.createReadStream()
+                .on('data', function (data) {
+                    const value = JSON.parse(data.value);
+                    if (value.hash === hash) {
+                        block = data;
+                    }
+                })
+                .on('error', function (err) {
+                    reject(err)
+                })
+                .on('close', function () {
+                    resolve(block);
+                });
+        });
+    }
+
+    // Method that return blocks for specified address
+    getBlocksByAddress(address) {
+        let self = this;
+        const blocks = [];
+        return new Promise(function (resolve, reject) {
+            // Add your code here, remember in Promises you need to resolve() or reject()
+            self.db.createReadStream()
+                .on('data', function (data) {
+                    const value = JSON.parse(data.value);
+                    if (value.body.address === address) {
+                        blocks.push(data);
+                    }
+                })
+                .on('error', function (err) {
+                    reject(err)
+                })
+                .on('close', function () {
+                    resolve(blocks);
+                });
+        });
+    }
+
+    dbToArray() {
+        let self = this;
+        const dataArray = [];
+        return new Promise(function (resolve, reject) {
+            // Add your code here, remember in Promises you need to resolve() or reject()
+            self.db.createReadStream()
+                .on('data', function (data) {
+                    dataArray.push(data);
+                })
+                .on('error', function (err) {
+                    reject(err)
+                })
+                .on('close', function () {
+                    resolve(dataArray);
+                });
+        });
+    }
+
     addDataToLevelDB(data) {
         let self = this;
         let i = 0;
@@ -87,6 +148,7 @@ class LevelSandbox {
     getBlock(key) {
         let self = this;
         return new Promise(function (resolve, reject) {
+            console.log(`getLevelDBData(key) ${key} `);
             self.getLevelDBData(key).then((result) => {
                 resolve(result);
             });
