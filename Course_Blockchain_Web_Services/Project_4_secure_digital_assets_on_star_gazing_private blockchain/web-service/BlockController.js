@@ -34,7 +34,7 @@ class BlockController {
             let response = {
                 "walletAddress": req.body.address,
                 "requestTimeStamp": requestTimeStamp,
-                "message": `${walletAddress}:${requestTimeStamp}:Registry`,
+                "message": `[${walletAddress}]:[${requestTimeStamp}]:Registry`,
                 "validationWindow": 300,
             }
 
@@ -44,7 +44,7 @@ class BlockController {
                 requestFound.validationWindow = requestFound.validationWindow - timeSinceFirstRequestInSeconds;
                 requestFound.requestTimeStamp = requestTimeStamp;
                 // Re-created this message since the timestamp is changed.
-                requestFound.message = `${walletAddress}:${requestTimeStamp}:Registry`
+                requestFound.message = `[${walletAddress}]:[${requestTimeStamp}]:Registry`
                 response = requestFound;
             } else {
                 this.timeoutRequests[walletAddress] = response;
@@ -54,7 +54,6 @@ class BlockController {
                         delete this.timeoutRequests[walletAddress];
                         // Remove the timer itself.
                         delete this.timeoutRequests[`${walletAddress} - pre-validation-timer`];
-                        console.log('this.timeoutRequests ::::: ', this.timeoutRequests);
                     }
                 }, 300000); // 5 Minute window ( time in milliseconds)
 
@@ -79,14 +78,14 @@ class BlockController {
                 const timeSinceFirstValidationInSeconds = (requestTimeStamp - validRequest.status.requestTimeStamp);
                 validRequest.status.validationWindow = validRequest.status.validationWindow - timeSinceFirstValidationInSeconds;
                 validRequest.status.requestTimeStamp = requestTimeStamp;
-                validRequest.status.message = `${signature}:${requestTimeStamp}:starRegistry`;
+                validRequest.status.message = `[${signature}]:[${requestTimeStamp}]:starRegistry`;
                 res.json(validRequest);
             } else {
 
                 isValidRequest = this.isRequestValidForAddress(walletAddress, signature);
 
                 if (isValidRequest) {
-                    message = `${signature}:${requestTimeStamp}:starRegistry`;
+                    message = `[${signature}]:[${requestTimeStamp}]:starRegistry`;
                     const validRequest = {
                         "registerStar": true,
                         "status": {
@@ -105,10 +104,7 @@ class BlockController {
                     // Expire valid request after 30 minutes
                     this.memPool[`${walletAddress} -validated-request-timer`] = setTimeout(() => {
                         if (this.memPool[walletAddress]) {
-                            // Remove the valid request once the time expires
-                            delete this.memPool[walletAddress];
-                            // Remove the valid request timer itself.
-                            delete this.memPool[`${walletAddress} -validated-request-timer`];
+                            this.removeAddressFromMemPool(walletAddress);
                         }
                     }, 1800000); // 30 Minutes window ( time in milliseconds)
 
@@ -127,7 +123,6 @@ class BlockController {
         this.app.post("/block", (req, res) => {
             // Add your code here ---Verify address request
             if (req.body) {
-                console.log('postNewBlock called....', req.body);
                 const data = {
                     ...req.body
                 };
@@ -138,6 +133,8 @@ class BlockController {
                         data.star.story = new Buffer(data.star.story).toString('base64');
                         let newBlock = new Block.Block(data);
                         this.blockChain.addBlock(newBlock).then((result) => {
+                            // Remove the entry from the mempool so that user will have to start over.
+                            this.removeAddressFromMemPool(req.body.address);
                             res.json(result);
                         }).catch((err) => {
                             console.log(err);
@@ -214,6 +211,13 @@ class BlockController {
             delete this.timeoutRequests[walletAddress];
             delete this.timeoutRequests[`${walletAddress} - pre-validation-timer`];
         }
+    }
+
+    removeAddressFromMemPool(walletAddress) {
+        // Remove the valid request once the time expires
+        delete this.memPool[walletAddress];
+        // Remove the valid request timer itself.
+        delete this.memPool[`${walletAddress} -validated-request-timer`];
     }
 
     isRequestValidForAddress(walletAddress, signature) {
