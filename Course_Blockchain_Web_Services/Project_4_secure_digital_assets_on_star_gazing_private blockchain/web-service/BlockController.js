@@ -192,18 +192,19 @@ class BlockController {
         this.app.get("/block/:height", (req, res) => {
             // Add your code here
             const height = req.params['height'];
-            if (height > 0) {
-                this.blockChain.getBlock(height).then((block) => {
-                    const data = JSON.parse(block);
+            this.blockChain.getBlock(height).then((block) => {
+                const data = JSON.parse(block);
+                if (data.body.star) {
                     data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
                     res.send(data);
-                }).catch((err) => {
-                    throw res.boom.notFound(`Failed to retrieve block for heght ${height}.. ERROR :::: ${err}`)
-                });
-
-            } else {
-                throw res.boom.notFound(`No star data exists at the Genesis block.`);
-            }
+                } else {
+                    throw res.boom.notFound(`No star data exists at the Genesis block.`);
+                }
+            }, () => {
+                throw res.boom.notFound(`Failed to retrieve block for heght ${height}.. ERROR :::: ${err}`)
+            }).catch((err) => {
+                throw res.boom.notFound(`Failed to retrieve block for heght ${height}.. ERROR :::: ${err}`)
+            });
         });
     }
 
