@@ -116,7 +116,7 @@ class BlockController {
                     this.postValidationCleanup(walletAddress);
                     res.json(validRequest);
                 } else {
-                    res.boom.badRequest('Request Validation Window Expired !!!');
+                    res.boom.badRequest('Request Validation Window Expired Or request signature is invalid !!!');
                 }
             }
 
@@ -131,21 +131,22 @@ class BlockController {
                 const data = {
                     ...req.body
                 };
-
-                if (Array.isArray(data.star)) {
-                    res.boom.badRequest(`Only one star data allowed. ERROR :::: Found Star Array...`);
+                if (this.memPool && this.memPool[req.body.address]) {
+                    if (Array.isArray(data.star)) {
+                        res.boom.badRequest(`Only one star data allowed. ERROR :::: Found Star Array...`);
+                    } else {
+                        data.star.story = new Buffer(data.star.story).toString('base64');
+                        let newBlock = new Block.Block(data);
+                        this.blockChain.addBlock(newBlock).then((result) => {
+                            res.json(result);
+                        }).catch((err) => {
+                            console.log(err);
+                            res.boom.badGateway(`Failed to create block.. ERROR :::: ${err}`);
+                        });
+                    }
                 } else {
-                    data.star.story = new Buffer(data.star.story).toString('base64');
-                    let newBlock = new Block.Block(data);
-                    this.blockChain.addBlock(newBlock).then((result) => {
-                        console.log('Block Added :::: ', result);
-                        res.json(result);
-                    }).catch((err) => {
-                        console.log(err);
-                        res.boom.badGateway(`Failed to create block.. ERROR :::: ${err}`);
-                    });
+                    res.boom.badRequest('Invalid request... You do not have access to add data.');
                 }
-
             } else {
                 res.boom.badRequest('Failed to create block. No data was provided');
             }
@@ -191,7 +192,7 @@ class BlockController {
         this.app.get("/block/:height", (req, res) => {
             // Add your code here
             const height = req.params['height'];
-            if (height > 1) {
+            if (height > 0) {
                 this.blockChain.getBlock(height).then((block) => {
                     const data = JSON.parse(block);
                     data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
@@ -218,7 +219,9 @@ class BlockController {
         let isValidRequest = false;
         if (this.timeoutRequests[walletAddress] && this.timeoutRequests[walletAddress].validationWindow > 0) {
             const message = this.timeoutRequests[walletAddress].message;
+            console.log(`message ::: ${message}`);
             isValidRequest = bitcoinMessage.verify(message, walletAddress, signature);
+            console.log(`isValidRequest ::: ${isValidRequest}`);
         } else {
             isValidRequest = false;
         }
