@@ -154,7 +154,7 @@ class BlockController {
     }
 
     getStarByHash() {
-        this.app.get("/stars/hash/:hash", (req, res) => {
+        this.app.get("/stars/hash::hash", (req, res) => {
             // Add your code here
             const hash = req.params['hash'];
 
@@ -170,7 +170,7 @@ class BlockController {
     }
 
     getStarByAddress() {
-        this.app.get("/stars/address/:address", (req, res) => {
+        this.app.get("/stars/address::address", (req, res) => {
             // Add your code here
             const address = req.params['address'];
             this.blockChain.getBlockByAddress(address).then((data) => {
