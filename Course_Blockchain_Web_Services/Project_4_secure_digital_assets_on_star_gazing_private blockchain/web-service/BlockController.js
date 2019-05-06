@@ -130,6 +130,7 @@ class BlockController {
                     if (Array.isArray(data.star)) {
                         res.boom.badRequest(`Only one star data allowed. ERROR :::: Found Star Array...`);
                     } else {
+                        //TODO use hexToascii for encoding
                         data.star.story = new Buffer(data.star.story).toString('base64');
                         let newBlock = new Block.Block(data);
                         this.blockChain.addBlock(newBlock).then((result) => {
@@ -193,6 +194,7 @@ class BlockController {
                 const data = JSON.parse(block);
                 if (height > 0) {
                     if (data.body.star) {
+                        //TODO use hexToascii for decoding
                         data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
                         res.send(data);
                     } else {
