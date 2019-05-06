@@ -191,11 +191,15 @@ class BlockController {
             const height = req.params['height'];
             this.blockChain.getBlock(height).then((block) => {
                 const data = JSON.parse(block);
-                if (data.body.star) {
-                    data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
+                if (height > 0) {
+                    if (data.body.star) {
+                        data.body.star.storyDecoded = new Buffer(data.body.star.story, 'base64').toString();
+                        res.send(data);
+                    } else {
+                        throw res.boom.notFound(`No star data exists at the Genesis block.`);
+                    }
+                } else { // Return the Genesis block.
                     res.send(data);
-                } else {
-                    throw res.boom.notFound(`No star data exists at the Genesis block.`);
                 }
             }, () => {
                 throw res.boom.notFound(`Failed to retrieve block for heght ${height}.. ERROR :::: ${err}`)
