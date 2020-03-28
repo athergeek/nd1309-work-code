@@ -25,6 +25,7 @@ class Block {
     // 
     generateHash() {
         // Use this to create a temporary reference of the class object
+		// Make sure you stringify your javascript object.
         let self = this;
         const promise = new Promise((resolve, reject) => {
             const result = {
